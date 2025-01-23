@@ -1,3 +1,5 @@
 class User < ApplicationRecord
-  enum :role, admin: "admin", client: "client", default: "client", null: false
+  has_many :reservations
+
+  enum :role, admin: "admin", client: "client", default: "client"
 end
