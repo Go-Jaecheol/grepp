@@ -12,11 +12,11 @@ class Reservation < ApplicationRecord
 
   private
 
-  DEADLINE = 3.days.from_now
+  DEADLINE = 3.days.from_now.to_date
   MAX_HEADCOUNT = 50_000
 
   def check_start_time_deadline
-    if start_time.present? && start_time < DEADLINE
+    if start_time.present? && start_time.to_date < DEADLINE
       errors.add(:start_time, "예약은 최소 3일 전까지만 신청할 수 있습니다.")
     end
   end
