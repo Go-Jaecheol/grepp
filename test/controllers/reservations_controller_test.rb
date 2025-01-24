@@ -15,16 +15,33 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
       }
     end
 
-    it "성공 테스트" do
-      # when
-      post reservations_url, params: { reservation: expected }
-      # then
-      assert_response :created
-      actual = Reservation.last
-      assert_equal expected[:user_id], actual.user_id
-      assert_equal expected[:start_time].to_i, actual.start_time.to_i
-      assert_equal expected[:end_time].to_i, actual.end_time.to_i
-      assert_equal expected[:headcount], actual.headcount
+    describe "성공 테스트" do
+      it "예약을 정상적으로 신청할 수 있다." do
+        # when
+        post reservations_url, params: { reservation: expected }
+        # then
+        assert_response :created
+        actual = Reservation.last
+        assert_equal expected[:user_id], actual.user_id
+        assert_equal expected[:start_time].to_i, actual.start_time.to_i
+        assert_equal expected[:end_time].to_i, actual.end_time.to_i
+        assert_equal expected[:headcount], actual.headcount
+      end
+
+      it "시험 시작까지 3일 남은 예약을 신청할 수 있다." do
+        # given
+        expected[:start_time] = Time.now + 3.day
+        expected[:end_time] = Time.now + 3.day + 1.hour
+        # when
+        post reservations_url, params: { reservation: expected }
+        # then
+        assert_response :created
+        actual = Reservation.last
+        assert_equal expected[:user_id], actual.user_id
+        assert_equal expected[:start_time].to_i, actual.start_time.to_i
+        assert_equal expected[:end_time].to_i, actual.end_time.to_i
+        assert_equal expected[:headcount], actual.headcount
+      end
     end
 
     describe "예외 테스트" do
@@ -39,6 +56,14 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
       it "start_time이 end_time보다 늦으면 400 에러를 반환한다." do
         # when
         invalid_params = expected.merge(start_time: expected[:end_time] + 1.hour)
+        post reservations_url, params: { reservation: invalid_params }
+        # then
+        assert_response :bad_request
+      end
+
+      it "시작 시간까지 남은 시간이 3일 보다 적으면 400 에러를 반환한다." do
+        # when
+        invalid_params = expected.merge(start_time: Time.now + 2.day, end_time: Time.now + 2.day + 1.hour)
         post reservations_url, params: { reservation: invalid_params }
         # then
         assert_response :bad_request

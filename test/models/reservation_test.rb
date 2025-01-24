@@ -93,4 +93,28 @@ class ReservationTest < ActiveSupport::TestCase
     # then
     assert_not reservation.valid?, "headcount가 정수가 아닌 경우 예약을 생성할 수 없습니다."
   end
+
+  test "시험 시작까지 남은 시간이 3일보다 적은 예약을 생성하는 경우 예외가 발생한다." do
+    # given & when
+    reservation = Reservation.new(
+      user: users(:client_1),
+      start_time: Time.now + 2.day,
+      end_time: Time.now + 2.day + 1.hour,
+      headcount: 1
+    )
+    # then
+    assert_not reservation.valid?, "start_time이 현재 시간으로부터 3일 이내인 경우 예약을 생성할 수 없습니다."
+  end
+
+  test "시험 시작까지 3일 남은 예약을 생성하는 경우 예약이 정상적으로 생성된다." do
+    # given & when
+    reservation = Reservation.new(
+      user: users(:client_1),
+      start_time: Time.now + 3.day,
+      end_time: Time.now + 3.day + 1.hour,
+      headcount: 1
+    )
+    # then
+    assert reservation.valid?, reservation.errors.full_messages
+  end
 end
