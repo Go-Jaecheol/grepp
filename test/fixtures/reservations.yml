@@ -1,0 +1,13 @@
+reservation_client1_13_15:
+  user: client_1
+  start_time: <%= "#{(Time.current + 4.day).strftime('%Y-%m-%d')} 13:00:00" %>
+  end_time: <%= "#{(Time.current + 4.day).strftime('%Y-%m-%d')} 15:00:00" %>
+  headcount: 40_000
+  status: "confirmed"
+
+reservation_client2_14_16:
+  user: client_2
+  start_time: <%= "#{(Time.current + 4.day).strftime('%Y-%m-%d')} 14:00:00" %>
+  end_time: <%= "#{(Time.current + 4.day).strftime('%Y-%m-%d')} 16:00:00" %>
+  headcount: 10_000
+  status: "confirmed"

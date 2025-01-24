@@ -1,9 +1,11 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
-
 admin_1:
   name: "어드민"
   role: "admin"
 
 client_1:
   name: "구자욱"
+  role: "client"
+
+client_2:
+  name: "원태인"
   role: "client"
