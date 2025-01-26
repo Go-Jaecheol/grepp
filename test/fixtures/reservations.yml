@@ -11,3 +11,10 @@ reservation_client2_14_16:
   end_time: <%= "#{(Time.current + 4.day).strftime('%Y-%m-%d')} 16:00:00" %>
   headcount: 10_000
   status: "confirmed"
+
+reservation_client2_18_19:
+  user: client_2
+  start_time: <%= "#{(Time.current + 4.day).strftime('%Y-%m-%d')} 18:00:00" %>
+  end_time: <%= "#{(Time.current + 4.day).strftime('%Y-%m-%d')} 19:00:00" %>
+  headcount: 50_000
+  status: "pending"

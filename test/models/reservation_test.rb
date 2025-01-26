@@ -142,12 +142,24 @@ class ReservationTest < ActiveSupport::TestCase
     assert reservation.valid?, reservation.errors.full_messages
   end
 
-  test "경곗값인 경우 같은 시간대에 포함하지 않는다 (e.g. [13시~15시], [15시~16시]는 같은 시간대 X" do
+  test "경곗값인 경우 같은 시간대에 포함하지 않는다. (e.g. [13시~15시], [15시~16시]는 같은 시간대 X)" do
     # given & when
     reservation = Reservation.new(
       user: users(:client_1),
       start_time: (Time.current + 4.day).change(hour: 15, min: 0, sec: 0),
       end_time: (Time.current + 4.day).change(hour: 16, min: 0, sec: 0),
+      headcount: 1_000
+    )
+    # then
+    assert reservation.valid?, reservation.errors.full_messages
+  end
+
+  test "확정되지 않은 기존 예약은 최대 인원 수 검증에 포함하지 않는다." do
+    # given & when
+    reservation = Reservation.new(
+      user: users(:client_1),
+      start_time: (Time.current + 4.day).change(hour: 18, min: 0, sec: 0),
+      end_time: (Time.current + 4.day).change(hour: 19, min: 0, sec: 0),
       headcount: 1_000
     )
     # then
