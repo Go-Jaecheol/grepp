@@ -114,13 +114,28 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
 
   describe "예약 조회 API 테스트: GET /reservations" do
     describe "성공 테스트" do
-      it "특정 유저의 예약 목록을 조회할 수 있다." do
+      it "고객은 자신의 예약 목록을 조회할 수 있다." do
         # given
         user = users(:client_1)
         # when
         get reservations_url, params: { user_id: user.id }
         # then
         assert_response :ok
+        actual = JSON.parse(response.body)
+
+        user_ids = actual.map { |reservation| reservation["user_id"] }.uniq
+        assert_equal [ user.id ], user_ids
+      end
+
+      it "어드민은 모든 예약 목록을 조회할 수 있다." do
+        # given
+        user = users(:admin_1)
+        # when
+        get reservations_url, params: { user_id: user.id }
+        # then
+        assert_response :ok
+        actual = JSON.parse(response.body)
+        assert_equal Reservation.count, actual.size
       end
     end
   end
