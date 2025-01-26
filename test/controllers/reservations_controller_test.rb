@@ -111,4 +111,17 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
       end
     end
   end
+
+  describe "예약 조회 API 테스트: GET /reservations" do
+    describe "성공 테스트" do
+      it "특정 유저의 예약 목록을 조회할 수 있다." do
+        # given
+        user = users(:client_1)
+        # when
+        get reservations_url, params: { user_id: user.id }
+        # then
+        assert_response :ok
+      end
+    end
+  end
 end
