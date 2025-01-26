@@ -26,7 +26,7 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         assert_equal reservation_params[:start_time].to_i, actual.start_time.to_i
         assert_equal reservation_params[:end_time].to_i, actual.end_time.to_i
         assert_equal reservation_params[:headcount], actual.headcount
-        assert_equal "pending", actual.status
+        assert actual.pending?
       end
 
       it "시험 시작까지 3일 남은 예약을 신청할 수 있다." do
@@ -44,7 +44,7 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         assert_equal expected[:start_time].to_i, actual.start_time.to_i
         assert_equal expected[:end_time].to_i, actual.end_time.to_i
         assert_equal expected[:headcount], actual.headcount
-        assert_equal "pending", actual.status
+        assert actual.pending?
       end
 
       it "최대 인원 수를 초과하지 않으면 예약을 정상적으로 신청할 수 있다." do
@@ -59,7 +59,7 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         assert_equal expected[:start_time].to_i, actual.start_time.to_i
         assert_equal expected[:end_time].to_i, actual.end_time.to_i
         assert_equal expected[:headcount], actual.headcount
-        assert_equal "pending", actual.status
+        assert actual.pending?
       end
     end
 
