@@ -7,7 +7,9 @@ class ReservationsController < ApplicationController
 
   def index
     params.require(:user_id)
-    reservations = Reservation.where(user_id: params[:user_id])
+    user = User.find(params[:user_id])
+
+    reservations = Reservation.by_user_role(user)
     render json: reservations
   end
 end

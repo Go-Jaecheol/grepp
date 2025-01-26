@@ -165,4 +165,22 @@ class ReservationTest < ActiveSupport::TestCase
     # then
     assert reservation.valid?, reservation.errors.full_messages
   end
+
+  test "role이 admin인 경우 모든 예약 목록을 조회할 수 있다." do
+    # given
+    user = users(:admin_1)
+    # when
+    reservations = Reservation.by_user_role(user)
+    # then
+    assert_equal Reservation.count, reservations.count
+  end
+
+  test "role이 client인 경우 자신의 예약 목록만 조회할 수 있다." do
+    # given
+    user = users(:client_1)
+    # when
+    reservations = Reservation.by_user_role(user)
+    # then
+    assert_equal [ user.id ], reservations.pluck(:user_id).uniq
+  end
 end
