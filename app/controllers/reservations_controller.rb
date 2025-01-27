@@ -19,6 +19,16 @@ class ReservationsController < ApplicationController
     render json: find_available_time_with_headcount(date)
   end
 
+  def update
+    params.require(:user_id)
+    user = User.find(params[:user_id])
+    update_params = params.require(:reservation).permit(:start_time, :end_time, :headcount)
+    reservation = Reservation.find(params[:id])
+    return head :forbidden unless check_updatable?(user, reservation)
+    reservation.update!(update_params)
+    head :no_content
+  end
+
   private
 
   def find_available_time_with_headcount(date)
@@ -31,5 +41,9 @@ class ReservationsController < ApplicationController
         available_headcount: available_headcount
       }
     end
+  end
+
+  def check_updatable?(user, reservation)
+    user.admin? || (user.client? && user.id == reservation.user_id && reservation.pending?)
   end
 end
