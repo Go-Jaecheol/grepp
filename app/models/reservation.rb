@@ -46,10 +46,10 @@ class Reservation < ApplicationRecord
   end
 
   def check_updatable_status
-    if attribute_before_last_save(:status) == "confirmed"
+    if attribute_in_database(:status) == "confirmed"
       errors.add(:status, "이미 확정된 예약입니다.")
     end
-    if attribute_before_last_save(:status) == "canceled"
+    if attribute_in_database(:status) == "canceled"
       errors.add(:status, "취소된 예약은 확정할 수 없습니다.")
     end
   end

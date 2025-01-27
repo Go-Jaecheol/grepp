@@ -336,5 +336,37 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         assert reservation.confirmed?
       end
     end
+
+    describe "예외 테스트" do
+      it "고객이 예약을 확정하려고 하면 403 에러를 반환한다." do
+        # given
+        user = users(:client_2)
+        reservation = reservations(:reservation_client2_18_19)
+        # when
+        patch confirm_reservation_url(reservation), params: { user_id: user.id }
+        # then
+        assert_response :forbidden
+      end
+
+      it "이미 확정된 예약인 경우 400 에러를 반환한다." do
+        # given
+        user = users(:admin_1)
+        reservation = reservations(:reservation_client2_14_16)
+        # when
+        patch confirm_reservation_url(reservation), params: { user_id: user.id }
+        # then
+        assert_response :bad_request
+      end
+
+      it "취소된 예약을 확정하려고 하는 경우 400 에러를 반환한다." do
+        # given
+        user = users(:admin_1)
+        reservation = reservations(:reservation_client2_canceled)
+        # when
+        patch confirm_reservation_url(reservation), params: { user_id: user.id }
+        # then
+        assert_response :bad_request
+      end
+    end
   end
 end

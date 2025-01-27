@@ -18,3 +18,10 @@ reservation_client2_18_19:
   end_time: <%= "#{(Time.current + 4.day).strftime('%Y-%m-%d')} 19:00:00" %>
   headcount: 50_000
   status: "pending"
+
+reservation_client2_canceled:
+  user: client_2
+  start_time: <%= "#{(Time.current + 4.day).strftime('%Y-%m-%d')} 22:00:00" %>
+  end_time: <%= "#{(Time.current + 4.day).strftime('%Y-%m-%d')} 23:00:00" %>
+  headcount: 10_000
+  status: "canceled"
