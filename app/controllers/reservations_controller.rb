@@ -1,13 +1,12 @@
 class ReservationsController < ApplicationController
   def create
-    create_params = params.require(:reservation).permit(:user_id, :start_time, :end_time, :headcount)
-    reservation = Reservation.create!(create_params)
+    create_params = params.require(:reservation).permit(:start_time, :end_time, :headcount)
+    reservation = Reservation.create!(create_params.merge(user_id: @user.id))
     head :created, location: url_for(reservation)
   end
 
   def index
-    params.require(:user_id)
-    user = User.find(params[:user_id])
+    user = User.find(@user.id)
     render json: Reservation.by_user_role(user)
   end
 
@@ -20,8 +19,7 @@ class ReservationsController < ApplicationController
   end
 
   def update
-    params.require(:user_id)
-    user = User.find(params[:user_id])
+    user = User.find(@user.id)
     update_params = params.require(:reservation).permit(:start_time, :end_time, :headcount)
     reservation = Reservation.find(params[:id])
     return head :forbidden unless check_updatable?(user, reservation)
@@ -31,8 +29,7 @@ class ReservationsController < ApplicationController
   end
 
   def confirm
-    params.require(:user_id)
-    user = User.find(params[:user_id])
+    user = User.find(@user.id)
     reservation = Reservation.find(params[:id])
     return head :forbidden unless user.admin?
 
@@ -41,8 +38,7 @@ class ReservationsController < ApplicationController
   end
 
   def cancel
-    params.require(:user_id)
-    user = User.find(params[:user_id])
+    user = User.find(@user.id)
     reservation = Reservation.find(params[:id])
     return head :forbidden unless check_updatable?(user, reservation)
 
@@ -51,8 +47,7 @@ class ReservationsController < ApplicationController
   end
 
   def destroy
-    params.require(:user_id)
-    user = User.find(params[:user_id])
+    user = User.find(@user.id)
     reservation = Reservation.find(params[:id])
     return head :forbidden unless check_updatable?(user, reservation)
 

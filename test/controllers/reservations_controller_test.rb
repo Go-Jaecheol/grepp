@@ -7,12 +7,12 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
   describe "예약 신청 API 테스트: POST /reservations" do
     # given
     setup do
-      @token = login(users(:client_1))
+      @user = users(:client_1)
+      @token = login(@user)
     end
 
     def reservation_params
       {
-        user_id: users(:client_1).id,
         start_time: (Time.current + 4.day).change(hour: 9, min: 0, sec: 0),
         end_time: (Time.current + 4.day).change(hour: 10, min: 0, sec: 0),
         headcount: 1_000
@@ -22,11 +22,13 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
     describe "성공 테스트" do
       it "예약을 정상적으로 신청할 수 있다." do
         # when
-        post reservations_url, params: { reservation: reservation_params }, headers: { "Authorization" => "Bearer #{@token}" }
+        post reservations_url,
+             params: { reservation: reservation_params },
+             headers: { "Authorization" => "Bearer #{@token}" }
         # then
         assert_response :created
         actual = Reservation.last
-        assert_equal reservation_params[:user_id], actual.user_id
+        assert_equal @user.id, actual.user_id
         assert_equal reservation_params[:start_time].to_i, actual.start_time.to_i
         assert_equal reservation_params[:end_time].to_i, actual.end_time.to_i
         assert_equal reservation_params[:headcount], actual.headcount
@@ -44,7 +46,7 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         # then
         assert_response :created
         actual = Reservation.last
-        assert_equal expected[:user_id], actual.user_id
+        assert_equal @user.id, actual.user_id
         assert_equal expected[:start_time].to_i, actual.start_time.to_i
         assert_equal expected[:end_time].to_i, actual.end_time.to_i
         assert_equal expected[:headcount], actual.headcount
@@ -59,7 +61,7 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         # then
         assert_response :created
         actual = Reservation.last
-        assert_equal expected[:user_id], actual.user_id
+        assert_equal @user.id, actual.user_id
         assert_equal expected[:start_time].to_i, actual.start_time.to_i
         assert_equal expected[:end_time].to_i, actual.end_time.to_i
         assert_equal expected[:headcount], actual.headcount
@@ -68,10 +70,19 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
     end
 
     describe "예외 테스트" do
+      it "Authorization header가 없으면 401 에러를 반환한다." do
+        # when
+        post reservations_url, params: { reservation: reservation_params }
+        # then
+        assert_response :unauthorized
+      end
+
       it "필수 파라미터가 없으면 400 에러를 반환한다." do
         # when
         invalid_params = reservation_params.except(:start_time)
-        post reservations_url, params: { reservation: invalid_params }, headers: { "Authorization" => "Bearer #{@token}" }
+        post reservations_url,
+             params: { reservation: invalid_params },
+             headers: { "Authorization" => "Bearer #{@token}" }
         # then
         assert_response :bad_request
       end
@@ -79,7 +90,9 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
       it "start_time이 end_time보다 늦으면 400 에러를 반환한다." do
         # when
         invalid_params = reservation_params.merge(start_time: reservation_params[:end_time] + 1.hour)
-        post reservations_url, params: { reservation: invalid_params }, headers: { "Authorization" => "Bearer #{@token}" }
+        post reservations_url,
+             params: { reservation: invalid_params },
+             headers: { "Authorization" => "Bearer #{@token}" }
         # then
         assert_response :bad_request
       end
@@ -90,7 +103,9 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
           start_time: (Time.current + 2.day).change(hour: 9, min: 0, sec: 0),
           end_time: (Time.current + 2.day).change(hour: 10, min: 0, sec: 0)
         )
-        post reservations_url, params: { reservation: invalid_params }, headers: { "Authorization" => "Bearer #{@token}" }
+        post reservations_url,
+             params: { reservation: invalid_params },
+             headers: { "Authorization" => "Bearer #{@token}" }
         # then
         assert_response :bad_request
       end
@@ -101,7 +116,9 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
           start_time: (Time.current + 4.day).change(hour: 12, min: 0, sec: 0),
           end_time: (Time.current + 4.day).change(hour: 15, min: 0, sec: 0)
         )
-        post reservations_url, params: { reservation: invalid_params }, headers: { "Authorization" => "Bearer #{@token}" }
+        post reservations_url,
+             params: { reservation: invalid_params },
+             headers: { "Authorization" => "Bearer #{@token}" }
         # then
         assert_response :bad_request
       end
@@ -109,7 +126,9 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
       it "같은 시간대에 기존 예약이 없어도 최대 인원 수(50_000명)를 초과하는 예약을 새로 생성하면 400 에러를 반환한다." do
         # when
         invalid_params = reservation_params.merge(headcount: 50_001)
-        post reservations_url, params: { reservation: invalid_params }, headers: { "Authorization" => "Bearer #{@token}" }
+        post reservations_url,
+             params: { reservation: invalid_params },
+             headers: { "Authorization" => "Bearer #{@token}" }
         # then
         assert_response :bad_request
       end
@@ -123,7 +142,7 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         user = users(:client_1)
         token = login(user)
         # when
-        get reservations_url, params: { user_id: user.id }, headers: { "Authorization" => "Bearer #{token}" }
+        get reservations_url, headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :ok
         actual = JSON.parse(response.body)
@@ -137,11 +156,20 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         user = users(:admin_1)
         token = login(user)
         # when
-        get reservations_url, params: { user_id: user.id }, headers: { "Authorization" => "Bearer #{token}" }
+        get reservations_url, headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :ok
         actual = JSON.parse(response.body)
         assert_equal Reservation.count, actual.size
+      end
+    end
+
+    describe "예외 테스트" do
+      it "Authorization header가 없으면 401 에러를 반환한다." do
+        # when
+        get reservations_url
+        # then
+        assert_response :unauthorized
       end
     end
   end
@@ -153,7 +181,9 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         user = users(:client_1)
         token = login(user)
         # when
-        get available_reservations_url, params: { date: (Time.current + 4.day).strftime("%Y-%m-%d") }, headers: { "Authorization" => "Bearer #{token}" }
+        get available_reservations_url,
+            params: { date: (Time.current + 4.day).strftime("%Y-%m-%d") },
+            headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :ok
         actual = JSON.parse(response.body)
@@ -172,6 +202,15 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         assert_equal 50_000, actual[18]["available_headcount"]
       end
     end
+
+    describe "예외 테스트" do
+      it "Authorization header가 없으면 401 에러를 반환한다." do
+        # when
+        get available_reservations_url, params: { date: (Time.current + 4.day).strftime("%Y-%m-%d") }
+        # then
+        assert_response :unauthorized
+      end
+    end
   end
 
   describe "예약 수정 API 테스트: PATCH /reservations/:id" do
@@ -187,7 +226,9 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
           headcount: 2_000
         }
         # when
-        patch reservation_url(reservation), params: { user_id: user.id, reservation: expected }, headers: { "Authorization" => "Bearer #{token}" }
+        patch reservation_url(reservation),
+              params: { reservation: expected },
+              headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :no_content
         reservation.reload
@@ -203,7 +244,9 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         reservation = reservations(:reservation_client2_18_19)
         expected = { start_time: (Time.current + 4.day).change(hour: 17, min: 0, sec: 0) }
         # when
-        patch reservation_url(reservation), params: { user_id: user.id, reservation: expected }, headers: { "Authorization" => "Bearer #{token}" }
+        patch reservation_url(reservation),
+              params: { reservation: expected },
+              headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :no_content
         reservation.reload
@@ -217,7 +260,9 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         reservation = reservations(:reservation_client2_18_19)
         expected = { end_time: (Time.current + 4.day).change(hour: 20, min: 0, sec: 0) }
         # when
-        patch reservation_url(reservation), params: { user_id: user.id, reservation: expected }, headers: { "Authorization" => "Bearer #{token}" }
+        patch reservation_url(reservation),
+              params: { reservation: expected },
+              headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :no_content
         reservation.reload
@@ -231,7 +276,9 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         reservation = reservations(:reservation_client2_18_19)
         expected = { headcount: 1 }
         # when
-        patch reservation_url(reservation), params: { user_id: user.id, reservation: expected }, headers: { "Authorization" => "Bearer #{token}" }
+        patch reservation_url(reservation),
+              params: { reservation: expected },
+              headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :no_content
         reservation.reload
@@ -249,7 +296,9 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
           headcount: 2_000
         }
         # when
-        patch reservation_url(reservation), params: { user_id: user.id, reservation: expected }, headers: { "Authorization" => "Bearer #{token}" }
+        patch reservation_url(reservation),
+              params: { reservation: expected },
+              headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :no_content
         reservation.reload
@@ -260,16 +309,24 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
     end
 
     describe "예외 테스트" do
+      it "Authorization header가 없으면 401 에러를 반환한다." do
+        # given
+        reservation = reservations(:reservation_client2_18_19)
+        # when
+        patch reservation_url(reservation), params: { reservation: { headcount: 1 } }
+        # then
+        assert_response :unauthorized
+      end
+
       it "수정한 start_time이 end_time보다 늦으면 400 에러를 반환한다." do
         # given
         user = users(:client_2)
         token = login(user)
         reservation = reservations(:reservation_client2_18_19)
         # when
-        patch reservation_url(reservation), params: {
-          user_id: user.id,
-          reservation: { start_time: reservation.end_time + 1.hour }
-        }, headers: { "Authorization" => "Bearer #{token}" }
+        patch reservation_url(reservation),
+              params: { reservation: { start_time: reservation.end_time + 1.hour } },
+              headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :bad_request
       end
@@ -280,10 +337,9 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         token = login(user)
         reservation = reservations(:reservation_client2_18_19)
         # when
-        patch reservation_url(reservation), params: {
-          user_id: user.id,
-          reservation: { start_time: Time.current + 2.day }
-        }, headers: { "Authorization" => "Bearer #{token}" }
+        patch reservation_url(reservation),
+              params: { reservation: { start_time: Time.current + 2.day } },
+              headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :bad_request
       end
@@ -295,7 +351,6 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         reservation = reservations(:reservation_client2_18_19)
         # when
         patch reservation_url(reservation), params: {
-          user_id: user.id,
           reservation: {
             start_time: reservation.start_time.change(hour: 12),
             end_time: reservation.end_time.change(hour: 15)
@@ -311,7 +366,9 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         token = login(user)
         reservation = reservations(:reservation_client2_18_19)
         # when
-        patch reservation_url(reservation), params: { user_id: user.id, reservation: { headcount: 50_001 } }, headers: { "Authorization" => "Bearer #{token}" }
+        patch reservation_url(reservation),
+              params: { reservation: { headcount: 50_001 } },
+              headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :bad_request
       end
@@ -322,7 +379,9 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         token = login(user)
         reservation = reservations(:reservation_client2_18_19)
         # when
-        patch reservation_url(reservation), params: { user_id: user.id, reservation: { headcount: 1 } }, headers: { "Authorization" => "Bearer #{token}" }
+        patch reservation_url(reservation),
+              params: { reservation: { headcount: 1 } },
+              headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :forbidden
       end
@@ -333,7 +392,9 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         token = login(user)
         reservation = reservations(:reservation_client2_14_16)
         # when
-        patch reservation_url(reservation), params: { user_id: user.id, reservation: { headcount: 1 } }, headers: { "Authorization" => "Bearer #{token}" }
+        patch reservation_url(reservation),
+              params: { reservation: { headcount: 1 } },
+              headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :forbidden
       end
@@ -344,7 +405,9 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         token = login(user)
         reservation = reservations(:reservation_client2_canceled)
         # when
-        patch reservation_url(reservation), params: { user_id: user.id, reservation: { headcount: 1 } }, headers: { "Authorization" => "Bearer #{token}" }
+        patch reservation_url(reservation),
+              params: { reservation: { headcount: 1 } },
+              headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :forbidden
       end
@@ -359,7 +422,7 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         token = login(user)
         reservation = reservations(:reservation_client2_18_19)
         # when
-        patch confirm_reservation_url(reservation), params: { user_id: user.id }, headers: { "Authorization" => "Bearer #{token}" }
+        patch confirm_reservation_url(reservation), headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :no_content
         reservation.reload
@@ -368,13 +431,22 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
     end
 
     describe "예외 테스트" do
+      it "Authorization header가 없으면 401 에러를 반환한다." do
+        # given
+        reservation = reservations(:reservation_client2_18_19)
+        # when
+        patch confirm_reservation_url(reservation)
+        # then
+        assert_response :unauthorized
+      end
+
       it "고객이 예약을 확정하려고 하면 403 에러를 반환한다." do
         # given
         user = users(:client_2)
         token = login(user)
         reservation = reservations(:reservation_client2_18_19)
         # when
-        patch confirm_reservation_url(reservation), params: { user_id: user.id }, headers: { "Authorization" => "Bearer #{token}" }
+        patch confirm_reservation_url(reservation), headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :forbidden
       end
@@ -385,7 +457,7 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         token = login(user)
         reservation = reservations(:reservation_client2_14_16)
         # when
-        patch confirm_reservation_url(reservation), params: { user_id: user.id }, headers: { "Authorization" => "Bearer #{token}" }
+        patch confirm_reservation_url(reservation), headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :bad_request
       end
@@ -396,7 +468,7 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         token = login(user)
         reservation = reservations(:reservation_client2_canceled)
         # when
-        patch confirm_reservation_url(reservation), params: { user_id: user.id }, headers: { "Authorization" => "Bearer #{token}" }
+        patch confirm_reservation_url(reservation), headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :bad_request
       end
@@ -411,7 +483,7 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         token = login(user)
         reservation = reservations(:reservation_client2_18_19)
         # when
-        patch cancel_reservation_url(reservation), params: { user_id: user.id }, headers: { "Authorization" => "Bearer #{token}" }
+        patch cancel_reservation_url(reservation), headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :no_content
         reservation.reload
@@ -424,7 +496,7 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         token = login(user)
         reservation = reservations(:reservation_client2_18_19)
         # when
-        patch cancel_reservation_url(reservation), params: { user_id: user.id }, headers: { "Authorization" => "Bearer #{token}" }
+        patch cancel_reservation_url(reservation), headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :no_content
         reservation.reload
@@ -433,13 +505,22 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
     end
 
     describe "예외 테스트" do
+      it "Authorization header가 없으면 401 에러를 반환한다." do
+        # given
+        reservation = reservations(:reservation_client2_18_19)
+        # when
+        patch cancel_reservation_url(reservation)
+        # then
+        assert_response :unauthorized
+      end
+
       it "다른 고객의 예약을 취소하려고 하면 403 에러를 반환한다." do
         # given
         user = users(:client_1)
         token = login(user)
         reservation = reservations(:reservation_client2_18_19)
         # when
-        patch cancel_reservation_url(reservation), params: { user_id: user.id }, headers: { "Authorization" => "Bearer #{token}" }
+        patch cancel_reservation_url(reservation), headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :forbidden
       end
@@ -450,7 +531,7 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         token = login(user)
         reservation = reservations(:reservation_client2_14_16)
         # when
-        patch cancel_reservation_url(reservation), params: { user_id: user.id }, headers: { "Authorization" => "Bearer #{token}" }
+        patch cancel_reservation_url(reservation), headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :forbidden
       end
@@ -461,7 +542,7 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         token = login(user)
         reservation = reservations(:reservation_client2_canceled)
         # when
-        patch cancel_reservation_url(reservation), params: { user_id: user.id }, headers: { "Authorization" => "Bearer #{token}" }
+        patch cancel_reservation_url(reservation), headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :forbidden
       end
@@ -476,7 +557,7 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         token = login(user)
         reservation = reservations(:reservation_client2_18_19)
         # when
-        delete reservation_url(reservation), params: { user_id: user.id }, headers: { "Authorization" => "Bearer #{token}" }
+        delete reservation_url(reservation), headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :no_content
         assert_nil Reservation.find_by(id: reservation.id)
@@ -488,7 +569,7 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         token = login(user)
         reservation = reservations(:reservation_client2_18_19)
         # when
-        delete reservation_url(reservation), params: { user_id: user.id }, headers: { "Authorization" => "Bearer #{token}" }
+        delete reservation_url(reservation), headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :no_content
         assert_nil Reservation.find_by(id: reservation.id)
@@ -496,13 +577,22 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
     end
 
     describe "예외 테스트" do
+      it "Authorization header가 없으면 401 에러를 반환한다." do
+        # given
+        reservation = reservations(:reservation_client2_18_19)
+        # when
+        delete reservation_url(reservation)
+        # then
+        assert_response :unauthorized
+      end
+
       it "다른 고객의 예약을 삭제하려고 하면 403 에러를 반환한다." do
         # given
         user = users(:client_1)
         token = login(user)
         reservation = reservations(:reservation_client2_18_19)
         # when
-        delete reservation_url(reservation), params: { user_id: user.id }, headers: { "Authorization" => "Bearer #{token}" }
+        delete reservation_url(reservation), headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :forbidden
       end
@@ -513,7 +603,7 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         token = login(user)
         reservation = reservations(:reservation_client2_14_16)
         # when
-        delete reservation_url(reservation), params: { user_id: user.id }, headers: { "Authorization" => "Bearer #{token}" }
+        delete reservation_url(reservation), headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :forbidden
       end
@@ -524,7 +614,7 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         token = login(user)
         reservation = reservations(:reservation_client2_canceled)
         # when
-        delete reservation_url(reservation), params: { user_id: user.id }, headers: { "Authorization" => "Bearer #{token}" }
+        delete reservation_url(reservation), headers: { "Authorization" => "Bearer #{token}" }
         # then
         assert_response :forbidden
       end
