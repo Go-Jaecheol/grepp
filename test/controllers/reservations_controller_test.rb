@@ -380,6 +380,66 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  describe "예약 취소 API 테스트: PATCH /reservations/:id/cancel" do
+    describe "성공 테스트" do
+      it "고객은 자신의 예약을 취소할 수 있다." do
+        # given
+        user = users(:client_2)
+        reservation = reservations(:reservation_client2_18_19)
+        # when
+        patch cancel_reservation_url(reservation), params: { user_id: user.id }
+        # then
+        assert_response :no_content
+        reservation.reload
+        assert reservation.canceled?
+      end
+
+      it "어드민은 고객의 예약을 취소할 수 있다." do
+        # given
+        user = users(:admin_1)
+        reservation = reservations(:reservation_client2_18_19)
+        # when
+        patch cancel_reservation_url(reservation), params: { user_id: user.id }
+        # then
+        assert_response :no_content
+        reservation.reload
+        assert reservation.canceled?
+      end
+    end
+
+    describe "예외 테스트" do
+      it "다른 고객의 예약을 취소하려고 하면 403 에러를 반환한다." do
+        # given
+        user = users(:client_1)
+        reservation = reservations(:reservation_client2_18_19)
+        # when
+        patch cancel_reservation_url(reservation), params: { user_id: user.id }
+        # then
+        assert_response :forbidden
+      end
+
+      it "확정된 예약을 취소하려고 하면 403 에러를 반환한다." do
+        # given
+        user = users(:client_2)
+        reservation = reservations(:reservation_client2_14_16)
+        # when
+        patch cancel_reservation_url(reservation), params: { user_id: user.id }
+        # then
+        assert_response :forbidden
+      end
+
+      it "이미 취소된 예약을 취소하려고 하면 403 에러를 반환한다." do
+        # given
+        user = users(:client_2)
+        reservation = reservations(:reservation_client2_canceled)
+        # when
+        patch cancel_reservation_url(reservation), params: { user_id: user.id }
+        # then
+        assert_response :forbidden
+      end
+    end
+  end
+
   describe "예약 삭제 API 테스트: DELETE /reservations/:id" do
     describe "성공 테스트" do
       it "고객은 자신의 예약을 삭제할 수 있다." do

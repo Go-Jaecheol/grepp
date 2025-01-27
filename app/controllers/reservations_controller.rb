@@ -40,6 +40,16 @@ class ReservationsController < ApplicationController
     head :no_content
   end
 
+  def cancel
+    params.require(:user_id)
+    user = User.find(params[:user_id])
+    reservation = Reservation.find(params[:id])
+    return head :forbidden unless check_updatable?(user, reservation)
+
+    reservation.update!(status: :canceled)
+    head :no_content
+  end
+
   def destroy
     params.require(:user_id)
     user = User.find(params[:user_id])
