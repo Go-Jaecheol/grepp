@@ -139,4 +139,31 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
       end
     end
   end
+
+  describe "예약 가능 시간 조회 API 테스트: GET /reservations/available" do
+    describe "성공 테스트" do
+      it "예약 가능한 시간 목록을 조회할 수 있다." do
+        # given
+        user = users(:client_1)
+        # when
+        get available_reservations_url, params: { date: (Time.current + 4.day).strftime("%Y-%m-%d") }
+        # then
+        assert_response :ok
+        actual = JSON.parse(response.body)
+        assert_equal 24, actual.size
+
+        assert_equal "13:00", actual[13]["time"]
+        assert_equal 40_000, actual[13]["confirmed_headcount"]
+        assert_equal 10_000, actual[13]["available_headcount"]
+
+        assert_equal "14:00", actual[14]["time"]
+        assert_equal 50_000, actual[14]["confirmed_headcount"]
+        assert_equal 0, actual[14]["available_headcount"]
+
+        assert_equal "18:00", actual[18]["time"]
+        assert_equal 0, actual[18]["confirmed_headcount"]
+        assert_equal 50_000, actual[18]["available_headcount"]
+      end
+    end
+  end
 end

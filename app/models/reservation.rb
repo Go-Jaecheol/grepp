@@ -6,23 +6,24 @@ class Reservation < ApplicationRecord
 
   enum :status, { pending: "pending", confirmed: "confirmed", canceled: "canceled" }, default: :pending
 
-  scope :by_user_role, ->(user) {
-    return all if user.admin?
-    where(user_id: user.id)
-  }
-  scope :sum_headcount_by_available_time, ->(date, hour) {
-    where(
-      "status = 'confirmed' AND start_time <= ? AND end_time > ?",
-      date.to_datetime.change(hour: hour),
-      date.to_datetime.change(hour: hour)
-    ).sum(:headcount)
-  }
-
   validates :user_id, :start_time, :end_time, :headcount, presence: true
   validates :end_time, comparison: { greater_than: :start_time }
   validates :headcount, numericality: { only_integer: true, greater_than: 0 }
   validate :check_start_time_deadline
   validate :check_max_headcount
+
+  scope :by_user_role, ->(user) {
+    return all if user.admin?
+    where(user_id: user.id)
+  }
+
+  def self.sum_headcount_by_available_time(date, hour)
+    where(
+      "status = 'confirmed' AND start_time <= ? AND end_time > ?",
+      date.to_datetime.change(hour: hour),
+      date.to_datetime.change(hour: hour)
+    ).sum(:headcount)
+  end
 
   private
 
