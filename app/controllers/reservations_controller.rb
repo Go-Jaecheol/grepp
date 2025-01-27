@@ -1,13 +1,15 @@
 class ReservationsController < ApplicationController
+  before_action :find_user, only: [ :index, :update, :confirm, :cancel, :destroy ]
+  before_action :find_reservation, only: [ :update, :confirm, :cancel, :destroy ]
+
   def create
     create_params = params.require(:reservation).permit(:start_time, :end_time, :headcount)
-    reservation = Reservation.create!(create_params.merge(user_id: @user.id))
+    reservation = Reservation.create!(create_params.merge(user_id: @login_user.id))
     head :created, location: url_for(reservation)
   end
 
   def index
-    user = User.find(@user.id)
-    render json: Reservation.by_user_role(user)
+    render json: Reservation.by_user_role(@user)
   end
 
   def available
@@ -19,43 +21,43 @@ class ReservationsController < ApplicationController
   end
 
   def update
-    user = User.find(@user.id)
     update_params = params.require(:reservation).permit(:start_time, :end_time, :headcount)
-    reservation = Reservation.find(params[:id])
-    return head :forbidden unless check_updatable?(user, reservation)
+    return head :forbidden unless check_updatable?(@user, @reservation)
 
-    reservation.update!(update_params)
+    @reservation.update!(update_params)
     head :no_content
   end
 
   def confirm
-    user = User.find(@user.id)
-    reservation = Reservation.find(params[:id])
-    return head :forbidden unless user.admin?
+    return head :forbidden unless @user.admin?
 
-    reservation.update!(status: :confirmed)
+    @reservation.update!(status: :confirmed)
     head :no_content
   end
 
   def cancel
-    user = User.find(@user.id)
-    reservation = Reservation.find(params[:id])
-    return head :forbidden unless check_updatable?(user, reservation)
+    return head :forbidden unless check_updatable?(@user, @reservation)
 
-    reservation.update!(status: :canceled)
+    @reservation.update!(status: :canceled)
     head :no_content
   end
 
   def destroy
-    user = User.find(@user.id)
-    reservation = Reservation.find(params[:id])
-    return head :forbidden unless check_updatable?(user, reservation)
+    return head :forbidden unless check_updatable?(@user, @reservation)
 
-    reservation.destroy!
+    @reservation.destroy!
     head :no_content
   end
 
   private
+
+  def find_user
+    @user = User.find(@login_user.id)
+  end
+
+  def find_reservation
+    @reservation = Reservation.find(params[:id])
+  end
 
   def find_available_time_with_headcount(date)
     (0..23).map do |hour|

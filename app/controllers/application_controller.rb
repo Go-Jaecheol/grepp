@@ -22,7 +22,7 @@ class ApplicationController < ActionController::API
     begin
       decoded_token = JWT.decode(token, SECRET_KEY, true, algorithm: "HS256")
       user_id = decoded_token[0]["user_id"]
-      @user = User.find_by(id: user_id)
+      @login_user = User.find_by(id: user_id)
     rescue JWT::DecodeError
       head :unauthorized
     end
