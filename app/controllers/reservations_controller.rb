@@ -25,6 +25,7 @@ class ReservationsController < ApplicationController
     update_params = params.require(:reservation).permit(:start_time, :end_time, :headcount)
     reservation = Reservation.find(params[:id])
     return head :forbidden unless check_updatable?(user, reservation)
+
     reservation.update!(update_params)
     head :no_content
   end
@@ -34,7 +35,18 @@ class ReservationsController < ApplicationController
     user = User.find(params[:user_id])
     reservation = Reservation.find(params[:id])
     return head :forbidden unless user.admin?
+
     reservation.update!(status: :confirmed)
+    head :no_content
+  end
+
+  def destroy
+    params.require(:user_id)
+    user = User.find(params[:user_id])
+    reservation = Reservation.find(params[:id])
+    return head :forbidden unless check_updatable?(user, reservation)
+
+    reservation.destroy!
     head :no_content
   end
 

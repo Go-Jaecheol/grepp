@@ -6,8 +6,8 @@ class ReservationTest < ActiveSupport::TestCase
     # given & when
     reservation = Reservation.new(
       user: users(:client_1),
-      start_time: Time.current + 4.day,
-      end_time: Time.current + 4.day + 1.hour,
+      start_time: (Time.current + 4.day).change(hour: 9, min: 0, sec: 0),
+      end_time: (Time.current + 4.day).change(hour: 10, min: 0, sec: 0),
       headcount: 1
     )
     # then
@@ -110,8 +110,8 @@ class ReservationTest < ActiveSupport::TestCase
     # given & when
     reservation = Reservation.new(
       user: users(:client_1),
-      start_time: Time.current + 3.day,
-      end_time: Time.current + 3.day + 1.hour,
+      start_time: (Time.current + 3.day).change(hour: 9, min: 0, sec: 0),
+      end_time: (Time.current + 3.day).change(hour: 10, min: 0, sec: 0),
       headcount: 1
     )
     # then

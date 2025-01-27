@@ -310,10 +310,20 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         assert_response :forbidden
       end
 
-      it "확정되지 않은 예약을 수정하려고 하면 403 에러를 반환한다." do
+      it "확정된 예약을 수정하려고 하면 403 에러를 반환한다." do
         # given
         user = users(:client_2)
         reservation = reservations(:reservation_client2_14_16)
+        # when
+        patch reservation_url(reservation), params: { user_id: user.id, reservation: { headcount: 1 } }
+        # then
+        assert_response :forbidden
+      end
+
+      it "취소된 예약을 수정하려고 하면 403 에러를 반환한다." do
+        # given
+        user = users(:client_2)
+        reservation = reservations(:reservation_client2_canceled)
         # when
         patch reservation_url(reservation), params: { user_id: user.id, reservation: { headcount: 1 } }
         # then
@@ -366,6 +376,64 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
         patch confirm_reservation_url(reservation), params: { user_id: user.id }
         # then
         assert_response :bad_request
+      end
+    end
+  end
+
+  describe "예약 삭제 API 테스트: DELETE /reservations/:id" do
+    describe "성공 테스트" do
+      it "고객은 자신의 예약을 삭제할 수 있다." do
+        # given
+        user = users(:client_2)
+        reservation = reservations(:reservation_client2_18_19)
+        # when
+        delete reservation_url(reservation), params: { user_id: user.id }
+        # then
+        assert_response :no_content
+        assert_nil Reservation.find_by(id: reservation.id)
+      end
+
+      it "어드민은 고객의 예약을 삭제할 수 있다." do
+        # given
+        user = users(:admin_1)
+        reservation = reservations(:reservation_client2_18_19)
+        # when
+        delete reservation_url(reservation), params: { user_id: user.id }
+        # then
+        assert_response :no_content
+        assert_nil Reservation.find_by(id: reservation.id)
+      end
+    end
+
+    describe "예외 테스트" do
+      it "다른 고객의 예약을 삭제하려고 하면 403 에러를 반환한다." do
+        # given
+        user = users(:client_1)
+        reservation = reservations(:reservation_client2_18_19)
+        # when
+        delete reservation_url(reservation), params: { user_id: user.id }
+        # then
+        assert_response :forbidden
+      end
+
+      it "확정된 예약을 삭제하려고 하면 403 에러를 반환한다." do
+        # given
+        user = users(:client_2)
+        reservation = reservations(:reservation_client2_14_16)
+        # when
+        delete reservation_url(reservation), params: { user_id: user.id }
+        # then
+        assert_response :forbidden
+      end
+
+      it "취소된 예약을 삭제하려고 하면 403 에러를 반환한다." do
+        # given
+        user = users(:client_2)
+        reservation = reservations(:reservation_client2_canceled)
+        # when
+        delete reservation_url(reservation), params: { user_id: user.id }
+        # then
+        assert_response :forbidden
       end
     end
   end
