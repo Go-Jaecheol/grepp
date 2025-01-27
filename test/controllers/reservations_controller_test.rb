@@ -166,4 +166,159 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
       end
     end
   end
+
+  describe "예약 수정 API 테스트: PATCH /reservations/:id" do
+    describe "성공 테스트" do
+      it "고객은 자신의 예약을 수정할 수 있다." do
+        # given
+        user = users(:client_2)
+        reservation = reservations(:reservation_client2_18_19)
+        expected = {
+          start_time: (Time.current + 4.day).change(hour: 1, min: 0, sec: 0),
+          end_time: (Time.current + 4.day).change(hour: 2, min: 0, sec: 0),
+          headcount: 2_000
+        }
+        # when
+        patch reservation_url(reservation), params: { user_id: user.id, reservation: expected }
+        # then
+        assert_response :no_content
+        reservation.reload
+        assert_equal expected[:start_time].to_i, reservation.start_time.to_i
+        assert_equal expected[:end_time].to_i, reservation.end_time.to_i
+        assert_equal expected[:headcount], reservation.headcount
+      end
+
+      it "고객은 자신의 예약 시작 시간을 수정할 수 있다." do
+        # given
+        user = users(:client_2)
+        reservation = reservations(:reservation_client2_18_19)
+        expected = { start_time: (Time.current + 4.day).change(hour: 17, min: 0, sec: 0) }
+        # when
+        patch reservation_url(reservation), params: { user_id: user.id, reservation: expected }
+        # then
+        assert_response :no_content
+        reservation.reload
+        assert_equal expected[:start_time].to_i, reservation.start_time.to_i
+      end
+
+      it "고객은 자신의 예약 종료 시간을 수정할 수 있다." do
+        # given
+        user = users(:client_2)
+        reservation = reservations(:reservation_client2_18_19)
+        expected = { end_time: (Time.current + 4.day).change(hour: 20, min: 0, sec: 0) }
+        # when
+        patch reservation_url(reservation), params: { user_id: user.id, reservation: expected }
+        # then
+        assert_response :no_content
+        reservation.reload
+        assert_equal expected[:end_time].to_i, reservation.end_time.to_i
+      end
+
+      it "고객은 자신의 예약 인원 수를 수정할 수 있다." do
+        # given
+        user = users(:client_2)
+        reservation = reservations(:reservation_client2_18_19)
+        expected = { headcount: 1 }
+        # when
+        patch reservation_url(reservation), params: { user_id: user.id, reservation: expected }
+        # then
+        assert_response :no_content
+        reservation.reload
+        assert_equal expected[:headcount], reservation.headcount
+      end
+
+      it "어드민은 고객의 예약을 수정할 수 있다." do
+        # given
+        user = users(:admin_1)
+        reservation = reservations(:reservation_client2_18_19)
+        expected = {
+          start_time: (Time.current + 4.day).change(hour: 1, min: 0, sec: 0),
+          end_time: (Time.current + 4.day).change(hour: 2, min: 0, sec: 0),
+          headcount: 2_000
+        }
+        # when
+        patch reservation_url(reservation), params: { user_id: user.id, reservation: expected }
+        # then
+        assert_response :no_content
+        reservation.reload
+        assert_equal expected[:start_time].to_i, reservation.start_time.to_i
+        assert_equal expected[:end_time].to_i, reservation.end_time.to_i
+        assert_equal expected[:headcount], reservation.headcount
+      end
+    end
+
+    describe "예외 테스트" do
+      it "수정한 start_time이 end_time보다 늦으면 400 에러를 반환한다." do
+        # given
+        user = users(:client_2)
+        reservation = reservations(:reservation_client2_18_19)
+        # when
+        patch reservation_url(reservation), params: {
+          user_id: user.id,
+          reservation: { start_time: reservation.end_time + 1.hour }
+        }
+        # then
+        assert_response :bad_request
+      end
+
+      it "시작 시간까지 남은 시간이 3일 보다 적으면 400 에러를 반환한다." do
+        # given
+        user = users(:client_2)
+        reservation = reservations(:reservation_client2_18_19)
+        # when
+        patch reservation_url(reservation), params: {
+          user_id: user.id,
+          reservation: { start_time: Time.current + 2.day }
+        }
+        # then
+        assert_response :bad_request
+      end
+
+      it "수정한 시간과 같은 시간대에 최대 인원 수(50_000명)를 초과하면 400 에러를 반환한다." do
+        # given
+        user = users(:client_2)
+        reservation = reservations(:reservation_client2_18_19)
+        # when
+        patch reservation_url(reservation), params: {
+          user_id: user.id,
+          reservation: {
+            start_time: reservation.start_time.change(hour: 12),
+            end_time: reservation.end_time.change(hour: 15)
+          }
+        }
+        # then
+        assert_response :bad_request
+      end
+
+      it "수정한 인원 수가 최대 인원 수(50_000명)를 초과하면 400 에러를 반환한다." do
+        # given
+        user = users(:client_2)
+        reservation = reservations(:reservation_client2_18_19)
+        # when
+        patch reservation_url(reservation), params: { user_id: user.id, reservation: { headcount: 50_001 } }
+        # then
+        assert_response :bad_request
+      end
+
+      it "다른 고객의 예약을 수정하려고 하면 403 에러를 반환한다." do
+        # given
+        user = users(:client_1)
+        reservation = reservations(:reservation_client2_18_19)
+        # when
+        patch reservation_url(reservation), params: { user_id: user.id, reservation: { headcount: 1 } }
+        # then
+        assert_response :forbidden
+      end
+
+      it "확정되지 않은 예약을 수정하려고 하면 403 에러를 반환한다." do
+        # given
+        user = users(:client_2)
+        reservation = reservations(:reservation_client2_14_16)
+        # when
+        patch reservation_url(reservation), params: { user_id: user.id, reservation: { headcount: 1 } }
+        # then
+        assert_response :forbidden
+      end
+    end
+  end
 end
