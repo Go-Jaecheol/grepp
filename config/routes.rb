@@ -1,7 +1,6 @@
 Rails.application.routes.draw do
   resources :reservations do
-    collection do
-      get :available
-    end
+    get :available, on: :collection
+    patch :confirm, on: :member
   end
 end

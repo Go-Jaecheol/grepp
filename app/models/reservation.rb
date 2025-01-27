@@ -11,6 +11,7 @@ class Reservation < ApplicationRecord
   validates :headcount, numericality: { only_integer: true, greater_than: 0 }
   validate :check_start_time_deadline
   validate :check_max_headcount
+  validate :check_updatable_status, on: :update
 
   scope :by_user_role, ->(user) {
     return all if user.admin?
@@ -41,6 +42,15 @@ class Reservation < ApplicationRecord
 
     if headcount.present? && reserved_count + headcount > MAX_HEADCOUNT
       errors.add(:base, "같은 시간대에는 최대 #{MAX_HEADCOUNT}명까지만 예약할 수 있습니다.")
+    end
+  end
+
+  def check_updatable_status
+    if attribute_before_last_save(:status) == "confirmed"
+      errors.add(:status, "이미 확정된 예약입니다.")
+    end
+    if attribute_before_last_save(:status) == "canceled"
+      errors.add(:status, "취소된 예약은 확정할 수 없습니다.")
     end
   end
 end

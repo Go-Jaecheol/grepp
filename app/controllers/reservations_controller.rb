@@ -29,12 +29,21 @@ class ReservationsController < ApplicationController
     head :no_content
   end
 
+  def confirm
+    params.require(:user_id)
+    user = User.find(params[:user_id])
+    reservation = Reservation.find(params[:id])
+    return head :forbidden unless user.admin?
+    reservation.update!(status: :confirmed)
+    head :no_content
+  end
+
   private
 
   def find_available_time_with_headcount(date)
     (0..23).map do |hour|
       confirmed_headcount = Reservation.sum_headcount_by_available_time(date, hour)
-      available_headcount = [Reservation::MAX_HEADCOUNT - confirmed_headcount, 0].max
+      available_headcount = [ Reservation::MAX_HEADCOUNT - confirmed_headcount, 0 ].max
       {
         time: format("%02d:00", hour),
         confirmed_headcount: confirmed_headcount,

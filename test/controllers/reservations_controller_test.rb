@@ -321,4 +321,20 @@ class ReservationsControllerTest < ActionDispatch::IntegrationTest
       end
     end
   end
+
+  describe "예약 확정 API 테스트: PATCH /reservations/:id/confirm" do
+    describe "성공 테스트" do
+      it "어드민은 예약을 확정할 수 있다." do
+        # given
+        user = users(:admin_1)
+        reservation = reservations(:reservation_client2_18_19)
+        # when
+        patch confirm_reservation_url(reservation), params: { user_id: user.id }
+        # then
+        assert_response :no_content
+        reservation.reload
+        assert reservation.confirmed?
+      end
+    end
+  end
 end
