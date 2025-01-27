@@ -183,4 +183,24 @@ class ReservationTest < ActiveSupport::TestCase
     # then
     assert_equal [ user.id ], reservations.pluck(:user_id).uniq
   end
+
+  test "확정된 예약 중 특정 시간대의 예약 인원 수를 조회할 수 있다." do
+    # given
+    date = (Time.current + 4.day).strftime("%Y-%m-%d")
+    hour = 14
+    # when
+    headcount = Reservation.sum_headcount_by_available_time(date, hour)
+    # then
+    assert_equal 50_000, headcount
+  end
+
+  test "확정되지 않은 예약의 예약 인원 수는 조회되지 않는다." do
+    # given
+    date = (Time.current + 4.day).strftime("%Y-%m-%d")
+    hour = 18
+    # when
+    headcount = Reservation.sum_headcount_by_available_time(date, hour)
+    # then
+    assert_equal 0, headcount
+  end
 end
